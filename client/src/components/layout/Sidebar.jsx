@@ -20,6 +20,8 @@ import {
   truncateText
 } from '../../utils/helpers';
 import { isMobile } from '../../utils/helpers';
+import { usersAPI } from '../../services/api';
+import UserList from '../UserList';
 
 const ChatItem = ({ chat, isActive, onClick, unreadCount }) => {
   const { user } = useAuth();
@@ -95,10 +97,94 @@ const Sidebar = ({ onClose, isOpen }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all'); // all, private, groups
   const [showNewChatModal, setShowNewChatModal] = useState(false);
+  // Add state for direct chat user picker
+  const [showUserPicker, setShowUserPicker] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [userResults, setUserResults] = useState([]);
+  const [userLoading, setUserLoading] = useState(false);
+  const [userError, setUserError] = useState('');
+  // Add state for group chat creation
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [groupDesc, setGroupDesc] = useState('');
+  const [groupUsers, setGroupUsers] = useState([]);
+  const [groupSearch, setGroupSearch] = useState('');
+  const [groupResults, setGroupResults] = useState([]);
+  const [groupLoading, setGroupLoading] = useState(false);
+  const [groupError, setGroupError] = useState('');
+  const { user } = useAuth();
+  const { createChat, setCreateChat } = useChat();
 
   useEffect(() => {
     loadChats();
   }, []);
+
+  // Fetch users when userSearch changes and user picker is open
+  useEffect(() => {
+    let active = true;
+    if (showUserPicker && userSearch.length > 0) {
+      setUserLoading(true);
+      setUserError('');
+      usersAPI.searchUsers(userSearch)
+        .then(res => {
+          if (active) {
+            // Support both res.data.data (wrapped) and res.data (array)
+            let users = Array.isArray(res.data) ? res.data : res.data?.data;
+            if (!Array.isArray(users)) users = [];
+            // Exclude current user
+            setUserResults(users.filter(u => u._id !== user._id));
+          }
+        })
+        .catch(err => {
+          if (active) {
+            // Try to show the actual error message from the backend if available
+            let message = 'Failed to fetch users';
+            if (err.response && err.response.data && err.response.data.message) {
+              message = err.response.data.message;
+            } else if (err.message) {
+              message = err.message;
+            }
+            setUserError(message);
+          }
+        })
+        .finally(() => {
+          if (active) setUserLoading(false);
+        });
+    } else {
+      setUserResults([]);
+    }
+    return () => { active = false; };
+  }, [userSearch, showUserPicker, user]);
+
+  // Fetch users for group search
+  useEffect(() => {
+    let active = true;
+    if (showGroupModal && groupSearch.length > 0) {
+      setGroupLoading(true);
+      setGroupError('');
+      usersAPI.searchUsers(groupSearch)
+        .then(res => {
+          let users = Array.isArray(res.data) ? res.data : res.data?.data;
+          if (!Array.isArray(users)) users = [];
+          setGroupResults(users.filter(u => u._id !== user._id));
+        })
+        .catch(err => {
+          let message = 'Failed to fetch users';
+          if (err.response && err.response.data && err.response.data.message) {
+            message = err.response.data.message;
+          } else if (err.message) {
+            message = err.message;
+          }
+          setGroupError(message);
+        })
+        .finally(() => {
+          if (active) setGroupLoading(false);
+        });
+    } else {
+      setGroupResults([]);
+    }
+    return () => { active = false; };
+  }, [groupSearch, showGroupModal, user]);
 
   const filteredChats = chats.filter(chat => {
     const matchesSearch = getChatDisplayName(chat, {}).toLowerCase().includes(searchQuery.toLowerCase());
@@ -248,17 +334,19 @@ const Sidebar = ({ onClose, isOpen }) => {
                   Start New Chat
                 </h2>
                 <button
-                  onClick={() => setShowNewChatModal(false)}
+                  onClick={() => { setShowNewChatModal(false); setShowUserPicker(false); }}
                   className="p-1 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <HiOutlineX className="h-5 w-5" />
                 </button>
               </div>
             </div>
-            
             <div className="p-4">
               <div className="space-y-3">
-                <button className="w-full flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <button
+                  className="w-full flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => setShowUserPicker(true)}
+                >
                   <div className="h-10 w-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mr-3">
                     <HiOutlineUsers className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
@@ -267,8 +355,9 @@ const Sidebar = ({ onClose, isOpen }) => {
                     <p className="text-sm text-gray-500 dark:text-gray-400">Chat with a specific person</p>
                   </div>
                 </button>
-                
-                <button className="w-full flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <button className="w-full flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => setShowGroupModal(true)}
+                >
                   <div className="h-10 w-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
                     <HiOutlineUserGroup className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
@@ -278,6 +367,164 @@ const Sidebar = ({ onClose, isOpen }) => {
                   </div>
                 </button>
               </div>
+              {/* User Picker Modal */}
+              {showUserPicker && (
+                <div className="mt-6">
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)}
+                    placeholder="Search users..."
+                    className="block w-full mb-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  />
+                  {userLoading && <div className="text-center py-2">Loading...</div>}
+                  {/* Only show error if there are no results */}
+                  {!userLoading && userError && userResults.length === 0 && (
+                    <div className="text-center text-red-500 py-2">{userError}</div>
+                  )}
+                  {!userLoading && userResults.length > 0 && (
+                    <UserList
+                      users={userResults}
+                      createChat={createChat}
+                      selectChat={selectChat}
+                      onUserClick={async (user) => {
+                        // Start direct chat
+                        setUserLoading(true);
+                        try {
+                          const result = await createChat({ chatType: 'private', participants: [user._id] });
+                          if (result.success) {
+                            selectChat(result.chat);
+                            setShowNewChatModal(false);
+                            setShowUserPicker(false);
+                          } else {
+                            alert(result.error || 'Could not start chat');
+                          }
+                        } finally {
+                          setUserLoading(false);
+                        }
+                      }}
+                    />
+                  )}
+                  {!userLoading && userResults.length === 0 && userSearch.length > 0 && !userError && (
+                    <div className="text-center text-gray-500 py-2">No users found.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+      {/* Group Chat Modal */}
+      {showGroupModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Create Group</h2>
+              <button
+                onClick={() => setShowGroupModal(false)}
+                className="p-1 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <HiOutlineX className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <input
+                type="text"
+                value={groupName}
+                onChange={e => setGroupName(e.target.value)}
+                placeholder="Group Name"
+                className="block w-full mb-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              />
+              <textarea
+                value={groupDesc}
+                onChange={e => setGroupDesc(e.target.value)}
+                placeholder="Description (optional)"
+                className="block w-full mb-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                rows={2}
+              />
+              <input
+                type="text"
+                value={groupSearch}
+                onChange={e => setGroupSearch(e.target.value)}
+                placeholder="Add users..."
+                className="block w-full mb-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              />
+              {groupLoading && <div className="text-center py-2">Loading...</div>}
+              {!groupLoading && groupError && groupResults.length === 0 && (
+                <div className="text-center text-red-500 py-2">{groupError}</div>
+              )}
+              {!groupLoading && groupResults.length > 0 && (
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {groupResults.map(u => (
+                    <div key={u._id} className="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded">
+                      <span>{u.name}</span>
+                      <button
+                        className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700"
+                        onClick={() => setGroupUsers(prev => prev.some(user => user._id === u._id) ? prev : [...prev, u])}
+                        disabled={groupUsers.some(user => user._id === u._id)}
+                      >
+                        {groupUsers.some(user => user._id === u._id) ? 'Added' : 'Add'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {groupUsers.length > 0 && (
+                <div className="mt-2">
+                  <div className="font-medium mb-1">Selected Users:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {groupUsers.map(u => (
+                      <div key={u._id} className="flex items-center bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
+                        <span>{u.name}</span>
+                        <button
+                          className="ml-1 text-xs text-red-500 hover:text-red-700"
+                          onClick={() => setGroupUsers(prev => prev.filter(user => user._id !== u._id))}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button
+                className="w-full mt-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors duration-200"
+                disabled={!groupName.trim() || groupUsers.length === 0 || groupLoading}
+                onClick={async () => {
+                  setGroupLoading(true);
+                  setGroupError('');
+                  try {
+                    const result = await createChat({
+                      chatType: 'group',
+                      chatName: groupName.trim(),
+                      description: groupDesc.trim(),
+                      participants: groupUsers.map(u => u._id),
+                    });
+                    if (result.success) {
+                      selectChat(result.chat);
+                      setShowGroupModal(false);
+                      setGroupName('');
+                      setGroupDesc('');
+                      setGroupUsers([]);
+                      setGroupSearch('');
+                      setGroupResults([]);
+                    } else {
+                      setGroupError(result.error || 'Could not create group');
+                    }
+                  } catch (err) {
+                    setGroupError(err.message || 'Could not create group');
+                  } finally {
+                    setGroupLoading(false);
+                  }
+                }}
+              >
+                Create Group
+              </button>
             </div>
           </motion.div>
         </div>

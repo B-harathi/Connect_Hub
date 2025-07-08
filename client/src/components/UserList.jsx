@@ -1,13 +1,12 @@
 // Example: UserList.jsx
 // ...existing code...
-import { useChat } from '../contexts/ChatContext';
 import { useNavigate } from 'react-router-dom';
 
-const UserList = ({ users }) => {
-  const { createChat, selectChat } = useChat();
+const UserList = ({ users, onUserClick, createChat, selectChat }) => {
   const navigate = useNavigate();
 
   const handleStartDirectChat = async (otherUserId) => {
+    if (!createChat || !selectChat) return;
     const result = await createChat({
       chatType: 'private',
       participants: [otherUserId],
@@ -25,9 +24,15 @@ const UserList = ({ users }) => {
       {users.map(user => (
         <div key={user._id}>
           <span>{user.name}</span>
-          <button onClick={() => handleStartDirectChat(user._id)}>
-            Start direct Chat
-          </button>
+          {onUserClick ? (
+            <button onClick={() => onUserClick(user)}>
+              Select
+            </button>
+          ) : (
+            <button onClick={() => handleStartDirectChat(user._id)}>
+              Start direct Chat
+            </button>
+          )}
         </div>
       ))}
     </div>

@@ -289,6 +289,8 @@ export const fuzzySearch = (items, searchTerm, keys) => {
 
 // Object Helpers
 export const getNestedValue = (obj, path) => {
+  if (typeof path === 'function') return path(obj);
+  if (typeof path !== 'string') return undefined;
   return path.split('.').reduce((current, key) => current?.[key], obj);
 };
 

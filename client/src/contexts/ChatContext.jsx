@@ -5,6 +5,7 @@ import { useSocket } from './SocketContext';
 import { LOADING_STATES, MESSAGE_TYPES } from '../utils/constants';
 import { sortBy } from '../utils/helpers';
 import toast from 'react-hot-toast';
+import { generateRandomId } from '../utils/helpers';
 
 // Initial state
 const initialState = {
@@ -332,15 +333,19 @@ export const ChatProvider = ({ children }) => {
   };
 
   // Select chat
-  const selectChat = async (chat) => {
+  const selectChat = (chat) => {
     dispatch({ type: CHAT_ACTIONS.SET_CURRENT_CHAT, payload: chat });
-    
+    // Show last known messages immediately (if any)
+    if (chat.messages) {
+      dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: chat.messages });
+    } else {
+      dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: [] });
+    }
     if (socket) {
       socket.emit('joinChat', chat._id);
     }
-    
-    await loadMessages(chat._id);
-    await markAllMessagesAsRead(chat._id);
+    // Load latest messages in the background
+    loadMessages(chat._id).then(() => markAllMessagesAsRead(chat._id));
   };
 
   // Load messages
@@ -374,17 +379,36 @@ export const ChatProvider = ({ children }) => {
 
   // Send message
   const sendMessage = async (messageData) => {
+    // Optimistic UI: add a temporary message
+    const tempId = generateRandomId();
+    const optimisticMessage = {
+      _id: tempId,
+      chat: state.currentChat._id,
+      sender: user, // from useAuth
+      content: messageData.content,
+      messageType: messageData.messageType || 'text',
+      createdAt: new Date().toISOString(),
+      pending: true,
+    };
+    dispatch({ type: CHAT_ACTIONS.ADD_MESSAGE, payload: optimisticMessage });
+
     try {
       const response = await messagesAPI.sendMessage({
         ...messageData,
         chatId: state.currentChat._id,
       });
-      
       if (response.success) {
+        // Replace the optimistic message with the real one
+        dispatch({ type: CHAT_ACTIONS.DELETE_MESSAGE, payload: tempId });
         // Message will be added via socket event
         return { success: true, message: response.data };
+      } else {
+        dispatch({ type: CHAT_ACTIONS.DELETE_MESSAGE, payload: tempId });
+        toast.error('Failed to send message');
+        return { success: false, error: 'Failed to send message' };
       }
     } catch (error) {
+      dispatch({ type: CHAT_ACTIONS.DELETE_MESSAGE, payload: tempId });
       const message = error.response?.data?.message || 'Failed to send message';
       toast.error(message);
       return { success: false, error: message };

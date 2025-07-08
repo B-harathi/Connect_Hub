@@ -138,32 +138,11 @@ const MessageInput = () => {
         )}
       </AnimatePresence>
 
-      {/* Emoji Picker */}
-      <AnimatePresence>
-        {showEmojiPicker && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-full left-6 mb-2 z-50"
-          >
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700">
-              <EmojiPicker
-                onEmojiClick={handleEmojiClick}
-                theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                height={400}
-                width={350}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Input Area */}
       <div className="p-4">
         <form onSubmit={handleSubmit} className="flex items-end space-x-3">
           {/* Action Buttons */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 relative">
             {/* File Attachment */}
             <button
               type="button"
@@ -184,19 +163,40 @@ const MessageInput = () => {
               className="hidden"
             />
 
-            {/* Emoji Picker */}
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className={`p-2 rounded-lg transition-colors ${
-                showEmojiPicker
-                  ? 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/20'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700'
-              }`}
-              disabled={!currentChat}
-            >
-              <HiOutlineEmojiHappy className="h-5 w-5" />
-            </button>
+            {/* Emoji Picker Button and Picker */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className={`p-2 rounded-lg transition-colors ${
+                  showEmojiPicker
+                    ? 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/20'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700'
+                }`}
+                disabled={!currentChat}
+              >
+                <HiOutlineEmojiHappy className="h-5 w-5" />
+              </button>
+              <AnimatePresence>
+                {showEmojiPicker && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute left-0 bottom-full mb-2 z-50"
+                  >
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                        height={400}
+                        width={350}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Message Input */}
