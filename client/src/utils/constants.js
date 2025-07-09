@@ -9,6 +9,8 @@ export const STORAGE_KEYS = {
   THEME: 'connecthub_theme',
   CHAT_DRAFTS: 'connecthub_drafts',
   NOTIFICATIONS: 'connecthub_notifications',
+  LANGUAGE: 'connecthub_language',
+  SETTINGS: 'connecthub_settings'
 };
 
 // Message Types
