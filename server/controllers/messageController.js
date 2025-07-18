@@ -71,16 +71,14 @@ const sendMessage = async (req, res) => {
     const io = getSocketInstance();
     if (io) {
       chat.participants.forEach(participantId => {
-        if (participantId.toString() !== senderId.toString()) {
-          io.to(`user_${participantId}`).emit('newMessage', {
-            message,
-            chat: {
-              _id: chat._id,
-              chatType: chat.chatType,
-              chatName: chat.chatName
-            }
-          });
-        }
+        io.to(`user_${participantId}`).emit('newMessage', {
+          message,
+          chat: {
+            _id: chat._id,
+            chatType: chat.chatType,
+            chatName: chat.chatName
+          }
+        });
       });
     }
 
