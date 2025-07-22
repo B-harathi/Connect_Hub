@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { formatMessageTime, generateAvatarUrl } from '../../utils/helpers';
 import { HiOutlineDotsVertical, HiOutlineHeart, HiOutlineReply } from 'react-icons/hi';
+import { useChat } from '../../contexts/ChatContext';
+import { useAuth } from '../../contexts/AuthContext';
+
+// Add a context for reply state (to be implemented in ChatContext or parent)
+export const ReplyContext = React.createContext({ setReplyTo: () => {}, replyTo: null });
 
 const MessageReactions = ({ reactions, onAddReaction, onRemoveReaction, currentUserId }) => {
   if (!reactions || reactions.length === 0) return null;
@@ -130,16 +135,34 @@ const MessageItem = ({
 }) => {
   const [showActions, setShowActions] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const { user } = useAuth();
+  const { sendMessage, currentChat } = useChat();
+  const { messagesAPI } = require('../../services/api');
+  const { loadMessages } = useChat();
+  const { setReplyTo } = useContext(ReplyContext);
 
-  const handleReaction = (emoji) => {
-    // TODO: Implement reaction functionality
-    console.log('Add reaction:', emoji);
+  // Add reaction
+  const handleReaction = async (emoji) => {
     setShowReactionPicker(false);
+    try {
+      await messagesAPI.addReaction(message._id, emoji);
+      // Optionally reload messages or rely on socket event
+      // await loadMessages(currentChat._id);
+    } catch (err) {
+      // Optionally show error
+    }
   };
 
-  const handleRemoveReaction = () => {
-    // TODO: Implement remove reaction functionality
-    console.log('Remove reaction');
+  // Remove reaction
+  const handleRemoveReaction = async () => {
+    setShowReactionPicker(false);
+    try {
+      await messagesAPI.removeReaction(message._id);
+      // Optionally reload messages or rely on socket event
+      // await loadMessages(currentChat._id);
+    } catch (err) {
+      // Optionally show error
+    }
   };
 
   const messageTime = formatMessageTime(message.createdAt);
@@ -151,6 +174,17 @@ const MessageItem = ({
       className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
+      // Drag to reply (mobile-like)
+      onTouchStart={e => {
+        e.target._touchStartX = e.touches[0].clientX;
+      }}
+      onTouchEnd={e => {
+        const startX = e.target._touchStartX;
+        const endX = e.changedTouches[0].clientX;
+        if (startX !== undefined && Math.abs(endX - startX) > 60 && !isOwn) {
+          setReplyTo(message);
+        }
+      }}
     >
       <div className={`flex max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
         {/* Avatar */}
@@ -206,7 +240,7 @@ const MessageItem = ({
               {messageTime}
               {isOwn && (
                 <span className="ml-1">
-                  {message.readBy?.length > 0 ? '✓✓' : '✓'}
+                  {message.readBy?.length > 0 ? '\u2713\u2713' : '\u2713'}
                 </span>
               )}
             </div>
@@ -217,7 +251,7 @@ const MessageItem = ({
             reactions={message.reactions}
             onAddReaction={handleReaction}
             onRemoveReaction={handleRemoveReaction}
-            currentUserId="current-user-id" // TODO: Get from auth context
+            currentUserId={user?._id}
           />
 
           {/* Action buttons */}
@@ -229,7 +263,9 @@ const MessageItem = ({
               >
                 <HiOutlineHeart className="h-4 w-4" />
               </button>
-              <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+              <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                onClick={() => setReplyTo(message)}
+              >
                 <HiOutlineReply className="h-4 w-4" />
               </button>
               <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
@@ -241,7 +277,7 @@ const MessageItem = ({
           {/* Reaction picker */}
           {showReactionPicker && (
             <div className={`absolute top-0 ${isOwn ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'} bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 flex space-x-1 mt-8`}>
-              {['❤️', '😂', '😮', '😢', '😡', '👍'].map(emoji => (
+              {['\u2764\ufe0f', '\ud83d\ude02', '\ud83d\ude2e', '\ud83d\ude22', '\ud83d\ude21', '\ud83d\udc4d'].map(emoji => (
                 <button
                   key={emoji}
                   onClick={() => handleReaction(emoji)}

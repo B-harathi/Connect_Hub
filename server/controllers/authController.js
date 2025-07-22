@@ -1079,42 +1079,52 @@ const logout = async (req, res) => {
   }
 };
 
-// Google OAuth callback - ENHANCED WITH BETTER ERROR HANDLING
+
+// Google OAuth callback - ENHANCED: create user if not exists
 const googleCallback = async (req, res) => {
   try {
     console.log('Google OAuth callback triggered');
-    console.log('req.user exists:', !!req.user);
-    console.log('req.user data:', req.user ? { id: req.user._id, email: req.user.email } : 'No user');
-
     if (!req.user) {
       console.error('No user found in Google OAuth callback');
       return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/login?error=authentication_failed`);
     }
 
+    // Find or create user in DB
+    let user = await User.findOne({ googleId: req.user.googleId || req.user.id });
+    if (!user) {
+      // If not found by googleId, try by email
+      user = await User.findOne({ email: req.user.email });
+      if (!user) {
+        // Create new user
+        user = await User.create({
+          googleId: req.user.googleId || req.user.id,
+          name: req.user.displayName || req.user.name,
+          email: req.user.email,
+          avatar: req.user.avatar || req.user.photo || (req.user.photos && req.user.photos[0] && req.user.photos[0].value)
+        });
+      } else {
+        // Link googleId if user exists by email
+        user.googleId = req.user.googleId || req.user.id;
+        await user.save();
+      }
+    }
+
     // Update user's last active time and online status
-    await User.findByIdAndUpdate(req.user._id, {
+    await User.findByIdAndUpdate(user._id, {
       lastActive: new Date(),
       isOnline: true
     });
 
-    console.log('User updated, generating token for user:', req.user._id);
-
     // Generate token
-    const token = generateToken(req.user._id);
-    
+    const token = generateToken(user._id);
     if (!token) {
       console.error('Failed to generate token');
       return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/login?error=token_generation_failed`);
     }
 
-    console.log('Token generated successfully, redirecting to frontend');
-
     // Redirect to frontend with token
     const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/callback?token=${token}`;
-    console.log('Redirecting to:', redirectUrl);
-    
     res.redirect(redirectUrl);
-
   } catch (error) {
     console.error('Google callback error:', error);
     res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/login?error=server_error`);

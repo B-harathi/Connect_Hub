@@ -144,6 +144,9 @@ export const usersAPI = {
   
   // Get user stats
   getUserStats: () => api.get('/users/stats'),
+  
+  // Update profile (name, bio)
+  updateProfile: (data) => api.put('/users/profile', data),
 };
 
 // Chats API
@@ -205,10 +208,18 @@ export const messagesAPI = {
   markAllMessagesAsRead: (chatId) => api.post(`/messages/chat/${chatId}/read-all`),
   
   // Add reaction
-  addReaction: (messageId, emoji) => api.post(`/messages/${messageId}/reactions`, { emoji }),
+  addReaction: async (messageId, emoji) => {
+    const res = await api.post(`/messages/${messageId}/reactions`, { emoji });
+    // Return the updated message with all reactions if available
+    return res;
+  },
   
   // Remove reaction
-  removeReaction: (messageId) => api.delete(`/messages/${messageId}/reactions`),
+  removeReaction: async (messageId) => {
+    const res = await api.delete(`/messages/${messageId}/reactions`);
+    // Return the updated message with all reactions if available
+    return res;
+  },
   
   // Search messages
   searchMessages: (chatId, query, limit = 20) => 

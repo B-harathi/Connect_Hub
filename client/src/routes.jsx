@@ -684,6 +684,7 @@ import Layout from './components/layout/Layout';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import ChatContainer from './components/chat/ChatContainer';
+import Settings from './components/settings/Settings';
 
 // Route constants
 export const ROUTES = {
@@ -926,7 +927,17 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
-      
+      {/* Settings route */}
+      <Route
+        path={ROUTES.SETTINGS}
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Settings />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
       {/* Default redirect */}
       <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.CHAT} replace />} />
       

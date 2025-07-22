@@ -21,6 +21,7 @@ const initialState = {
   searchResults: [],
   searchLoading: false,
   onlineUsers: [],
+  messagesByChatId: {},
 };
 
 // Action types
@@ -85,12 +86,15 @@ const chatReducer = (state, action) => {
         hasMoreMessages: true,
       };
 
-    case CHAT_ACTIONS.SET_MESSAGES:
+    case CHAT_ACTIONS.SET_MESSAGES: {
+      const chatId = state.currentChat?._id;
       return {
         ...state,
         messages: action.payload,
         messagesLoading: LOADING_STATES.SUCCESS,
+        messagesByChatId: chatId ? { ...state.messagesByChatId, [chatId]: action.payload } : state.messagesByChatId,
       };
+    }
 
     case CHAT_ACTIONS.ADD_MESSAGE:
       return {
@@ -294,6 +298,28 @@ export const ChatProvider = ({ children }) => {
       });
     };
 
+    // Handle message reactions
+    const handleMessageReaction = (data) => {
+      dispatch({
+        type: CHAT_ACTIONS.UPDATE_MESSAGE,
+        payload: {
+          _id: data.messageId,
+          reactions: data.reactions || (data.reaction ? [data.reaction] : []), // Use all reactions if available
+        },
+      });
+    };
+
+    // Handle reaction removal
+    const handleReactionRemoved = (data) => {
+      dispatch({
+        type: CHAT_ACTIONS.UPDATE_MESSAGE,
+        payload: {
+          _id: data.messageId,
+          reactions: data.reactions || [], // Use all reactions if available
+        },
+      });
+    };
+
     // Register socket listeners
     socket.on('newMessage', handleNewMessage);
     socket.on('messageEdited', handleMessageEdited);
@@ -302,6 +328,8 @@ export const ChatProvider = ({ children }) => {
     socket.on('userStoppedTyping', handleUserStoppedTyping);
     socket.on('userOnline', handleUserOnline);
     socket.on('userOffline', handleUserOffline);
+    socket.on('messageReaction', handleMessageReaction);
+    socket.on('reactionRemoved', handleReactionRemoved);
 
     // Cleanup
     return () => {
@@ -312,6 +340,8 @@ export const ChatProvider = ({ children }) => {
       socket.off('userStoppedTyping', handleUserStoppedTyping);
       socket.off('userOnline', handleUserOnline);
       socket.off('userOffline', handleUserOffline);
+      socket.off('messageReaction', handleMessageReaction);
+      socket.off('reactionRemoved', handleReactionRemoved);
     };
   }, [socket, isConnected, state.currentChat, state.onlineUsers, user]);
 
@@ -335,8 +365,10 @@ export const ChatProvider = ({ children }) => {
   // Select chat
   const selectChat = (chat) => {
     dispatch({ type: CHAT_ACTIONS.SET_CURRENT_CHAT, payload: chat });
-    // Show last known messages immediately (if any)
-    if (chat.messages) {
+    // Show cached messages instantly if available
+    if (state.messagesByChatId[chat._id]) {
+      dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: state.messagesByChatId[chat._id] });
+    } else if (chat.messages) {
       dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: chat.messages });
     } else {
       dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: [] });
@@ -363,7 +395,9 @@ export const ChatProvider = ({ children }) => {
         if (page === 1) {
           dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: messages });
         } else {
-          dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: [...messages, ...state.messages] });
+          // For pagination, prepend older messages
+          const prevMessages = state.messagesByChatId[chatId] || [];
+          dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: [...messages, ...prevMessages] });
         }
         
         dispatch({ 

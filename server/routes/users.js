@@ -13,7 +13,8 @@ const {
   unblockUser,
   getBlockedUsers,
   updateAvatar,
-  getUserStats
+  getUserStats,
+  updateProfile
 } = require('../controllers/userController');
 
 const { authenticate } = require('../middleware/auth');
@@ -41,6 +42,9 @@ router.post('/avatar',
   validateUploadedFile,
   updateAvatar
 );
+
+// Update profile (name, bio)
+router.put('/profile', updateProfile);
 
 // Friend management
 router.get('/friends/list', getFriends);

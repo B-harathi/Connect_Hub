@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChat } from '../../contexts/ChatContext';
 import { generateAvatarUrl, getChatDisplayName, getChatDisplayAvatar } from '../../utils/helpers';
+import { useNavigate } from 'react-router-dom';
 
 const Header = ({ 
   onToggleSidebar, 
@@ -24,6 +25,7 @@ const Header = ({
   const { currentChat } = useChat();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const navigate = useNavigate();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -167,7 +169,7 @@ const Header = ({
               <button
                 onClick={() => {
                   setShowUserMenu(false);
-                  // Navigate to profile
+                  navigate('/settings');
                 }}
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >

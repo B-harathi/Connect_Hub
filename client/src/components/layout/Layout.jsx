@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
 import Sidebar from './Sidebar';
-// import NotificationPanel from './NotificationPanel';
+import NotificationPanel from './NotificationPanel';
 // import SuggestionsPanel from './SuggestionsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { isMobile } from '../../utils/helpers';
@@ -85,10 +85,10 @@ const Layout = ({ children }) => {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="flex-shrink-0 relative z-10"
               >
-                {/* <NotificationPanel 
+                <NotificationPanel 
                   onClose={toggleNotifications}
                   isOpen={notificationsOpen}
-                /> */}
+                />
               </motion.div>
             )}
           </AnimatePresence>

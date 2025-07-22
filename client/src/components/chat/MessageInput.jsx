@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useContext, useEffect } from 'react';
 import { HiOutlinePaperClip, HiOutlineEmojiHappy, HiOutlinePaperAirplane, HiOutlineMicrophone } from 'react-icons/hi';
 import { motion, AnimatePresence } from 'framer-motion';
 import TextareaAutosize from 'react-textarea-autosize';
@@ -7,6 +7,7 @@ import { useChat } from '../../contexts/ChatContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { debounce } from '../../utils/helpers';
 import FileUpload from './FileUpload';
+import { ReplyContext } from './MessageItem';
 
 const MessageInput = () => {
   const [message, setMessage] = useState('');
@@ -17,7 +18,8 @@ const MessageInput = () => {
   
   const { sendMessage, currentChat, sendTypingIndicator, sendFile } = useChat();
   const { isConnected } = useSocket();
-  
+  const { replyTo, setReplyTo } = useContext(ReplyContext);
+
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -56,12 +58,14 @@ const MessageInput = () => {
     const messageData = {
       content: message.trim(),
       messageType: 'text',
+      ...(replyTo ? { replyTo: replyTo._id } : {}),
     };
 
     // Clear input immediately for better UX
     setMessage('');
     setIsTyping(false);
     sendTypingIndicator(false);
+    setReplyTo(null);
 
     try {
       await sendMessage(messageData);
@@ -124,6 +128,18 @@ const MessageInput = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+      {/* Reply to message UI */}
+      {replyTo && (
+        <div className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex-1">
+            <div className="text-xs text-gray-500 dark:text-gray-400">Replying to {replyTo.sender?.name || 'User'}</div>
+            <div className="text-sm text-gray-900 dark:text-white truncate">
+              {replyTo.messageType === 'text' ? replyTo.content : replyTo.messageType === 'image' ? <img src={replyTo.file?.url} alt="reply-img" className="h-8 w-8 inline-block rounded" /> : '[File]'}
+            </div>
+          </div>
+          <button onClick={() => setReplyTo(null)} className="ml-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">&times;</button>
+        </div>
+      )}
       {/* File Upload Modal */}
       <AnimatePresence>
         {showFileUpload && (

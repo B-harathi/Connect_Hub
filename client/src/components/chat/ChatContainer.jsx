@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import MessageList from './MessageList';
@@ -7,6 +7,7 @@ import { useChat } from '../../contexts/ChatContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getChatDisplayName, getChatDisplayAvatar, generateAvatarUrl } from '../../utils/helpers';
 import { HiOutlineVideoCamera, HiOutlinePhone, HiOutlineDotsVertical } from 'react-icons/hi';
+import { ReplyContext } from './MessageItem';
 
 const EmptyState = () => (
   <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -76,6 +77,7 @@ const ChatContainer = () => {
   const { chatId } = useParams();
   const { currentChat, selectChat, chats } = useChat();
   const { user } = useAuth();
+  const [replyTo, setReplyTo] = useState(null);
 
   useEffect(() => {
     if (chatId && chats.length > 0 && (!currentChat || currentChat._id !== chatId)) {
@@ -100,10 +102,12 @@ const ChatContainer = () => {
       <ChatHeader chat={currentChat} user={user} />
 
       {/* Messages Area */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <MessageList />
-        <MessageInput />
-      </div>
+      <ReplyContext.Provider value={{ replyTo, setReplyTo }}>
+        <div className="flex-1 flex flex-col min-h-0">
+          <MessageList />
+          <MessageInput />
+        </div>
+      </ReplyContext.Provider>
     </motion.div>
   );
 };

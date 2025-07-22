@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   HiOutlineBell, 
@@ -12,6 +12,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { getStoredTheme, setStoredTheme, applyTheme, getSystemTheme } from '../../utils/helpers';
 import Button from '../common/Button';
+import { useRef } from 'react';
+import api, { usersAPI } from '../../services/api';
 
 const SettingsSection = ({ title, children }) => (
   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-soft p-6">
@@ -50,7 +52,7 @@ const ToggleSwitch = ({ enabled, onChange, label, description }) => (
 );
 
 const Settings = () => {
-  const { user, logout, updateNotificationSettings } = useAuth();
+  const { user, logout, updateNotificationSettings, updateProfile } = useAuth();
   const [currentTheme, setCurrentTheme] = useState(getStoredTheme());
   const [notifications, setNotifications] = useState({
     email: user?.notificationSettings?.email ?? true,
@@ -58,6 +60,21 @@ const Settings = () => {
     sound: user?.notificationSettings?.sound ?? true,
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editProfile, setEditProfile] = useState(false);
+  const [profileName, setProfileName] = useState(user?.name || '');
+  const [profileBio, setProfileBio] = useState(user?.bio || '');
+  const [profileAvatar, setProfileAvatar] = useState(user?.avatar || '');
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const fileInputRef = useRef();
+
+  useEffect(() => {
+    // Apply theme on mount based on stored value
+    const storedTheme = getStoredTheme();
+    setCurrentTheme(storedTheme);
+    const appliedTheme = storedTheme === 'system' ? getSystemTheme() : storedTheme;
+    applyTheme(appliedTheme);
+  }, []);
 
   const handleThemeChange = (theme) => {
     setCurrentTheme(theme);
@@ -91,6 +108,46 @@ const Settings = () => {
     setShowDeleteConfirm(true);
   };
 
+  const handleEditProfile = () => {
+    setEditProfile(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditProfile(false);
+    setProfileName(user?.name || '');
+    setProfileBio(user?.bio || '');
+    setProfileAvatar(user?.avatar || '');
+    setAvatarFile(null);
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      setProfileAvatar(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      // Update name and bio
+      await usersAPI.updateProfile({ name: profileName, bio: profileBio });
+      // Update avatar if changed
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('avatar', avatarFile);
+        await usersAPI.updateAvatar(formData);
+      }
+      window.location.reload(); // Reload to update context and UI
+    } catch (error) {
+      // Handle error (toast is shown by api helper)
+    } finally {
+      setSavingProfile(false);
+      setEditProfile(false);
+    }
+  };
+
   const themeOptions = [
     {
       value: 'light',
@@ -121,6 +178,84 @@ const Settings = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
           Settings
         </h1>
+
+        {/* Profile Edit Section */}
+        <SettingsSection title="Profile">
+          <div className="flex items-center space-x-6 mb-6">
+            <div className="relative">
+              <img
+                src={profileAvatar || '/default-avatar.png'}
+                alt="Avatar"
+                className="h-20 w-20 rounded-full object-cover border-2 border-purple-500"
+              />
+              {editProfile && (
+                <button
+                  className="absolute bottom-0 right-0 bg-purple-600 text-white rounded-full p-2 hover:bg-purple-700"
+                  onClick={() => fileInputRef.current.click()}
+                  type="button"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3h3z" />
+                  </svg>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
+            <div className="flex-1">
+              {editProfile ? (
+                <>
+                  <input
+                    type="text"
+                    value={profileName}
+                    onChange={e => setProfileName(e.target.value)}
+                    className="block w-full mb-2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                    placeholder="Your name"
+                  />
+                  <textarea
+                    value={profileBio}
+                    onChange={e => setProfileBio(e.target.value)}
+                    className="block w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                    placeholder="Your bio"
+                    rows={2}
+                  />
+                </>
+              ) : (
+                <>
+                  <div className="text-lg font-semibold text-gray-900 dark:text-white">{user?.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{user?.bio}</div>
+                </>
+              )}
+            </div>
+            <div>
+              {editProfile ? (
+                <>
+                  <Button
+                    variant="primary"
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile}
+                  >
+                    {savingProfile ? 'Saving...' : 'Save'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    className="ml-2"
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" onClick={handleEditProfile}>Edit</Button>
+              )}
+            </div>
+          </div>
+        </SettingsSection>
 
         {/* Appearance Settings */}
         <SettingsSection title="Appearance">

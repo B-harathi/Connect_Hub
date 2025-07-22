@@ -385,6 +385,43 @@ const updateAvatar = async (req, res) => {
   }
 };
 
+// Update profile (name, bio)
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { name, bio } = req.body;
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (bio !== undefined) updateData.bio = bio;
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No profile fields provided to update'
+      });
+    }
+    const user = await User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true })
+      .select('name email avatar bio isOnline lastActive createdAt');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: user
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 // Get user statistics
 const getUserStats = async (req, res) => {
   try {
@@ -433,5 +470,6 @@ module.exports = {
   unblockUser,
   getBlockedUsers,
   updateAvatar,
+  updateProfile,
   getUserStats
 };

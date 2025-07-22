@@ -294,11 +294,7 @@ const addReaction = async (req, res) => {
       chat.participants.forEach(participantId => {
         io.to(`user_${participantId}`).emit('messageReaction', {
           messageId: message._id,
-          reaction: {
-            user: req.user,
-            emoji,
-            createdAt: new Date()
-          }
+          reactions: message.reactions, // Send all reactions
         });
       });
     }
@@ -353,7 +349,7 @@ const removeReaction = async (req, res) => {
       chat.participants.forEach(participantId => {
         io.to(`user_${participantId}`).emit('reactionRemoved', {
           messageId: message._id,
-          userId
+          reactions: message.reactions, // Send all reactions
         });
       });
     }

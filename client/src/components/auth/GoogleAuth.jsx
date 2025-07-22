@@ -55,6 +55,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
+const GOOGLE_AUTH_URL = process.env.REACT_APP_BACKEND_URL
+  ? `${process.env.REACT_APP_BACKEND_URL}/api/auth/google`
+  : 'http://localhost:5000/api/auth/google';
+
 const GoogleAuth = ({ buttonText = 'Continue with Google' }) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -93,7 +97,7 @@ const GoogleAuth = ({ buttonText = 'Continue with Google' }) => {
       sessionStorage.setItem('googleAuthLoading', 'true');
       
       setTimeout(() => {
-        window.location.href = 'http://localhost:5000/api/auth/google';
+        window.location.href = GOOGLE_AUTH_URL;
       }, 300);
       
     } catch (error) {
