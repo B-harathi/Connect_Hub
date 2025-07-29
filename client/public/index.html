@@ -2,9 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#a855f7" />
+    <meta name="theme-color" content="#a855f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="description" content="ConnectHub - Modern chat application for seamless communication" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
@@ -96,7 +98,7 @@
         document.body.classList.add('loaded');
       });
       
-      // Theme detection and application
+      // Theme detection and application (handled by React ThemeContext)
       (function() {
         const theme = localStorage.getItem('connecthub_theme') || 'light';
         const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

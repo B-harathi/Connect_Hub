@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  HiOutlineBell, 
   HiOutlineMoon, 
   HiOutlineSun, 
   HiOutlineDesktopComputer,
@@ -10,10 +9,9 @@ import {
   HiOutlineLogout
 } from 'react-icons/hi';
 import { useAuth } from '../../contexts/AuthContext';
-import { getStoredTheme, setStoredTheme, applyTheme, getSystemTheme } from '../../utils/helpers';
+import { useTheme } from '../../contexts/ThemeContext';
 import Button from '../common/Button';
 import { useRef } from 'react';
-import api, { usersAPI } from '../../services/api';
 
 const SettingsSection = ({ title, children }) => (
   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-soft p-6">
@@ -53,7 +51,7 @@ const ToggleSwitch = ({ enabled, onChange, label, description }) => (
 
 const Settings = () => {
   const { user, logout, updateNotificationSettings, updateProfile } = useAuth();
-  const [currentTheme, setCurrentTheme] = useState(getStoredTheme());
+  const { theme, changeTheme, isDarkMode } = useTheme();
   const [notifications, setNotifications] = useState({
     email: user?.notificationSettings?.email ?? true,
     push: user?.notificationSettings?.push ?? true,
@@ -68,20 +66,8 @@ const Settings = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const fileInputRef = useRef();
 
-  useEffect(() => {
-    // Apply theme on mount based on stored value
-    const storedTheme = getStoredTheme();
-    setCurrentTheme(storedTheme);
-    const appliedTheme = storedTheme === 'system' ? getSystemTheme() : storedTheme;
-    applyTheme(appliedTheme);
-  }, []);
-
-  const handleThemeChange = (theme) => {
-    setCurrentTheme(theme);
-    setStoredTheme(theme);
-    
-    const appliedTheme = theme === 'system' ? getSystemTheme() : theme;
-    applyTheme(appliedTheme);
+  const handleThemeChange = (newTheme) => {
+    changeTheme(newTheme);
   };
 
   const handleNotificationChange = async (type) => {
@@ -132,12 +118,12 @@ const Settings = () => {
     setSavingProfile(true);
     try {
       // Update name and bio
-      await usersAPI.updateProfile({ name: profileName, bio: profileBio });
+      await updateProfile({ name: profileName, bio: profileBio });
       // Update avatar if changed
       if (avatarFile) {
         const formData = new FormData();
         formData.append('avatar', avatarFile);
-        await usersAPI.updateAvatar(formData);
+        await updateProfile(formData);
       }
       window.location.reload(); // Reload to update context and UI
     } catch (error) {
@@ -267,31 +253,59 @@ const Settings = () => {
             <div className="grid grid-cols-1 gap-3">
               {themeOptions.map((option) => {
                 const Icon = option.icon;
+                const isSelected = theme === option.value;
                 return (
                   <button
                     key={option.value}
                     onClick={() => handleThemeChange(option.value)}
-                    className={`flex items-center p-3 rounded-lg border-2 transition-colors ${
-                      currentTheme === option.value
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    className={`flex items-center p-3 rounded-lg border-2 transition-all duration-200 ${
+                      isSelected
+                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-sm'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                     }`}
                   >
-                    <Icon className="h-5 w-5 mr-3 text-gray-600 dark:text-gray-400" />
-                    <div className="text-left">
-                      <p className="font-medium text-gray-900 dark:text-white">
+                    <Icon className={`h-5 w-5 mr-3 ${
+                      isSelected 
+                        ? 'text-purple-600 dark:text-purple-400' 
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`} />
+                    <div className="text-left flex-1">
+                      <p className={`font-medium ${
+                        isSelected 
+                          ? 'text-purple-900 dark:text-purple-100' 
+                          : 'text-gray-900 dark:text-white'
+                      }`}>
                         {option.label}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className={`text-sm ${
+                        isSelected 
+                          ? 'text-purple-700 dark:text-purple-300' 
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}>
                         {option.description}
                       </p>
                     </div>
-                    {currentTheme === option.value && (
-                      <div className="ml-auto h-2 w-2 bg-purple-500 rounded-full"></div>
+                    {isSelected && (
+                      <div className="ml-auto h-2 w-2 bg-purple-500 rounded-full animate-pulse"></div>
                     )}
                   </button>
                 );
               })}
+            </div>
+            
+            {/* Current theme indicator */}
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{theme}</span>
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Dark mode: <span className={`font-medium ${isDarkMode ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {isDarkMode ? 'Active' : 'Inactive'}
+                </span>
+              </p>
+              <div className={`mt-2 p-2 rounded border ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+                <p className="text-xs">Preview: This is how your content will look</p>
+              </div>
             </div>
           </div>
         </SettingsSection>

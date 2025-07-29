@@ -8,6 +8,54 @@ import { useAuth } from '../../contexts/AuthContext';
 // Add a context for reply state (to be implemented in ChatContext or parent)
 export const ReplyContext = React.createContext({ setReplyTo: () => {}, replyTo: null });
 
+// Component to display replied message
+const ReplyMessage = ({ replyTo, isOwn }) => {
+  if (!replyTo) return null;
+
+  const getReplyContent = () => {
+    if (!replyTo.content && !replyTo.messageType) {
+      return 'Message not available';
+    }
+    
+    if (replyTo.messageType === 'text') {
+      return replyTo.content || 'Text message';
+    } else if (replyTo.messageType === 'image') {
+      return '📷 Image';
+    } else if (replyTo.messageType === 'file') {
+      return '📎 File';
+    } else if (replyTo.messageType === 'voice') {
+      return '🎤 Voice message';
+    }
+    return 'Message';
+  };
+
+  const getSenderName = () => {
+    if (replyTo.sender && replyTo.sender.name) {
+      return replyTo.sender.name;
+    }
+    return 'User';
+  };
+
+  return (
+    <div className={`mb-2 p-2 rounded-lg border-l-4 ${
+      isOwn 
+        ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400' 
+        : 'bg-gray-100 dark:bg-gray-700 border-gray-400'
+    }`}>
+      <div className={`text-xs font-medium mb-1 ${
+        isOwn ? 'text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-400'
+      }`}>
+        {getSenderName()}
+      </div>
+      <div className={`text-sm truncate ${
+        isOwn ? 'text-purple-800 dark:text-purple-200' : 'text-gray-700 dark:text-gray-300'
+      }`}>
+        {getReplyContent()}
+      </div>
+    </div>
+  );
+};
+
 const MessageReactions = ({ reactions, onAddReaction, onRemoveReaction, currentUserId }) => {
   if (!reactions || reactions.length === 0) return null;
 
@@ -87,42 +135,56 @@ const FilePreview = ({ file }) => {
   );
 };
 
-const MessageContent = ({ message }) => {
-  switch (message.messageType) {
-    case 'text':
-      return (
-        <div className="break-words">
-          {message.content}
-          {message.isEdited && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(edited)</span>
-          )}
-        </div>
-      );
-    
-    case 'image':
-    case 'file':
-      return <FilePreview file={message.file} />;
-    
-    case 'voice':
-      return (
-        <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg max-w-sm">
-          <button className="h-10 w-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-            <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-            </svg>
-          </button>
-          <div className="flex-1">
-            <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
-              <div className="h-2 bg-purple-500 rounded-full w-1/3"></div>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">0:15</p>
+const MessageContent = ({ message, isOwn }) => {
+  const renderContent = () => {
+    switch (message.messageType) {
+      case 'text':
+        return (
+          <div className="break-words">
+            {message.content}
+            {message.isEdited && (
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(edited)</span>
+            )}
           </div>
+        );
+      
+      case 'image':
+      case 'file':
+        return <FilePreview file={message.file} />;
+      
+      case 'voice':
+        return (
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg max-w-sm">
+            <button className="h-10 w-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+              <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <div className="flex-1">
+              <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
+                <div className="h-2 bg-purple-500 rounded-full w-1/3"></div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">0:15</p>
+            </div>
+          </div>
+        );
+      
+      default:
+        return <div className="text-gray-500 dark:text-gray-400 italic">Unsupported message type</div>;
+    }
+  };
+
+  return (
+    <div>
+      {message.replyTo && <ReplyMessage replyTo={message.replyTo} isOwn={isOwn} />}
+      {renderContent()}
+      {message.replyTo && (
+        <div className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'}`}>
+          ↳ Reply
         </div>
-      );
-    
-    default:
-      return <div className="text-gray-500 dark:text-gray-400 italic">Unsupported message type</div>;
-  }
+      )}
+    </div>
+  );
 };
 
 const MessageItem = ({ 
@@ -233,7 +295,7 @@ const MessageItem = ({
                 : 'rounded-l-md'
             }`}
           >
-            <MessageContent message={message} />
+            <MessageContent message={message} isOwn={isOwn} />
             
             {/* Message time */}
             <div className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'}`}>

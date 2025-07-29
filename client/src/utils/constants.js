@@ -2,6 +2,15 @@
 export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 export const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
 
+// Regex Patterns
+export const REGEX_PATTERNS = {
+  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/,
+  URL: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/,
+  PHONE: /^\+?[\d\s\-\(\)]{10,}$/,
+  USERNAME: /^[a-zA-Z0-9_]{3,20}$/,
+};
+
 // Local Storage Keys
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'connecthub_token',
@@ -159,15 +168,6 @@ export const LOADING_STATES = {
   LOADING: 'loading',
   SUCCESS: 'success',
   ERROR: 'error',
-};
-
-// Regex Patterns
-export const REGEX_PATTERNS = {
-  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PHONE: /^\+?[\d\s-()]+$/,
-  URL: /^https?:\/\/.+/,
-  MENTION: /@(\w+)/g,
-  HASHTAG: /#(\w+)/g,
 };
 
 // Date Formats

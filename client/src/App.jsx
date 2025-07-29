@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Components
 import Layout from './components/layout/Layout';
@@ -21,7 +22,6 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import { useAuth } from './contexts/AuthContext';
 
 // Utils
-import { applyTheme, getStoredTheme, getSystemTheme } from './utils/helpers';
 import { ROUTES } from './utils/constants';
 
 // Import styles
@@ -134,37 +134,17 @@ const AppRouter = () => {
 
 // Main App Component
 const App = () => {
-  // Initialize theme on app load
-  useEffect(() => {
-    const savedTheme = getStoredTheme();
-    const theme = savedTheme === 'system' ? getSystemTheme() : savedTheme;
-    applyTheme(theme);
-    
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleSystemThemeChange = (e) => {
-      if (getStoredTheme() === 'system') {
-        applyTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
-    
-    return () => {
-      mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    };
-  }, []);
-
   return (
     <ErrorBoundary>
-      <div className="App">
+      <div className="App min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
         <AuthProvider>
           <SocketProvider>
             <ChatProvider>
-              <AppRouter />
-              
-              {/* Toast notifications */}
-              <Toaster
+              <ThemeProvider>
+                <AppRouter />
+                
+                {/* Toast notifications */}
+                <Toaster
                 position="top-right"
                 reverseOrder={false}
                 gutter={8}
@@ -175,8 +155,8 @@ const App = () => {
                   className: '',
                   duration: 4000,
                   style: {
-                    background: '#363636',
-                    color: '#fff',
+                    background: 'var(--toast-bg, #363636)',
+                    color: 'var(--toast-color, #fff)',
                     borderRadius: '8px',
                     fontSize: '14px',
                     maxWidth: '500px',
@@ -215,6 +195,7 @@ const App = () => {
                   },
                 }}
               />
+              </ThemeProvider>
             </ChatProvider>
           </SocketProvider>
         </AuthProvider>

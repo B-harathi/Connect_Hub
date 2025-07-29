@@ -1,15 +1,17 @@
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns';
-import { STORAGE_KEYS, REGEX_PATTERNS, FILE_UPLOAD } from './constants';
+import { STORAGE_KEYS, FILE_UPLOAD, REGEX_PATTERNS } from './constants';
 
 // Local Storage Helpers
-// In helpers.js
-export const getStoredToken = () => localStorage.getItem('connecthub_token');
-export const setStoredToken = (token) => localStorage.setItem('connecthub_token', token);
+export const getStoredToken = () => localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+export const setStoredToken = (token) => localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+
 export const getStoredUser = () => {
-  const user = localStorage.getItem('connecthub_user');
-  return user ? JSON.parse(user) : null;
+  const userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+  return userData ? JSON.parse(userData) : null;
 };
-export const setStoredUser = (user) => localStorage.setItem('connecthub_user', JSON.stringify(user));
+
+export const setStoredUser = (user) => localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
 
 export const removeStoredToken = () => {
   localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -20,11 +22,25 @@ export const removeStoredUser = () => {
 };
 
 export const getStoredTheme = () => {
-  return localStorage.getItem(STORAGE_KEYS.THEME) || 'light';
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(STORAGE_KEYS.THEME) || 'light';
+    }
+    return 'light';
+  } catch (error) {
+    console.error('Error accessing localStorage:', error);
+    return 'light';
+  }
 };
 
 export const setStoredTheme = (theme) => {
-  localStorage.setItem(STORAGE_KEYS.THEME, theme);
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(STORAGE_KEYS.THEME, theme);
+    }
+  } catch (error) {
+    console.error('Error setting theme in localStorage:', error);
+  }
 };
 
 // Date and Time Helpers
@@ -377,12 +393,16 @@ export const copyToClipboard = async (text) => {
 
 // Theme Helpers
 export const applyTheme = (theme) => {
-  const root = document.documentElement;
-  
-  if (theme === 'dark') {
-    root.classList.add('dark');
-  } else {
-    root.classList.remove('dark');
+  try {
+    const root = document.documentElement;
+    
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  } catch (error) {
+    console.error('Error applying theme:', error);
   }
 };
 
@@ -415,7 +435,7 @@ export const isTouchDevice = () => {
   return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 };
 
-export default {
+const helpers = {
   // Local Storage
   getStoredToken,
   setStoredToken,
@@ -481,3 +501,5 @@ export default {
   isAndroid,
   isTouchDevice,
 };
+
+export default helpers;

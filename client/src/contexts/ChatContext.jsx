@@ -421,6 +421,7 @@ export const ChatProvider = ({ children }) => {
       sender: user, // from useAuth
       content: messageData.content,
       messageType: messageData.messageType || 'text',
+      replyTo: messageData.replyTo || null,
       createdAt: new Date().toISOString(),
       pending: true,
     };

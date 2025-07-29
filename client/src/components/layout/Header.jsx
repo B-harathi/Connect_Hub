@@ -5,11 +5,14 @@ import {
   HiOutlineUsers,
   HiOutlineSearch,
   HiOutlineCog,
-  HiOutlineLogout
+  HiOutlineLogout,
+  HiOutlineSun,
+  HiOutlineMoon
 } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChat } from '../../contexts/ChatContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { generateAvatarUrl, getChatDisplayName, getChatDisplayAvatar } from '../../utils/helpers';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,6 +26,7 @@ const Header = ({
 }) => {
   const { user, logout } = useAuth();
   const { currentChat } = useChat();
+  const { changeTheme, isDarkMode } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
@@ -106,6 +110,19 @@ const Header = ({
         {/* Mobile search button */}
         <button className="md:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors">
           <HiOutlineSearch className="h-6 w-6" />
+        </button>
+
+        {/* Theme toggle button */}
+        <button
+          onClick={() => changeTheme(isDarkMode ? 'light' : 'dark')}
+          className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+          aria-label="Toggle theme"
+        >
+          {isDarkMode ? (
+            <HiOutlineSun className="h-6 w-6" />
+          ) : (
+            <HiOutlineMoon className="h-6 w-6" />
+          )}
         </button>
 
         {/* Notifications button */}

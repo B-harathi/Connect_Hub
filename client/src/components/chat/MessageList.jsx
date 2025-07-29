@@ -82,7 +82,6 @@ const MessageList = () => {
   const messagesContainerRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [replyTo, setReplyTo] = useState(null);
 
   // Auto scroll to bottom on new messages
   useEffect(() => {
@@ -144,12 +143,11 @@ const MessageList = () => {
   }
 
   return (
-    <ReplyContext.Provider value={{ replyTo, setReplyTo }}>
-      <div 
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-6 py-4 space-y-1 relative"
-        style={{ scrollBehavior: 'smooth' }}
-      >
+    <div 
+      ref={messagesContainerRef}
+      className="flex-1 overflow-y-auto px-6 py-4 space-y-1 relative"
+      style={{ scrollBehavior: 'smooth' }}
+    >
         {/* Load more button */}
         {hasMoreMessages && (
           <div className="flex justify-center py-4">
@@ -227,7 +225,6 @@ const MessageList = () => {
           )}
         </AnimatePresence>
       </div>
-    </ReplyContext.Provider>
   );
 };
 

@@ -130,14 +130,21 @@ const MessageInput = () => {
     <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
       {/* Reply to message UI */}
       {replyTo && (
-        <div className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <div className="flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-200 dark:border-purple-700">
           <div className="flex-1">
-            <div className="text-xs text-gray-500 dark:text-gray-400">Replying to {replyTo.sender?.name || 'User'}</div>
-            <div className="text-sm text-gray-900 dark:text-white truncate">
-              {replyTo.messageType === 'text' ? replyTo.content : replyTo.messageType === 'image' ? <img src={replyTo.file?.url} alt="reply-img" className="h-8 w-8 inline-block rounded" /> : '[File]'}
+            <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">Replying to {replyTo.sender?.name || 'User'}</div>
+            <div className="text-sm text-gray-900 dark:text-white truncate mt-1">
+              {replyTo.messageType === 'text' ? replyTo.content : replyTo.messageType === 'image' ? '📷 Image' : replyTo.messageType === 'file' ? '📎 File' : '🎤 Voice message'}
             </div>
           </div>
-          <button onClick={() => setReplyTo(null)} className="ml-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">&times;</button>
+          <button 
+            onClick={() => setReplyTo(null)} 
+            className="ml-2 p-1 rounded-full text-purple-400 hover:text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
       {/* File Upload Modal */}
