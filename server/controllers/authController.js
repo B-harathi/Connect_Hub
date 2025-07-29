@@ -1084,45 +1084,33 @@ const logout = async (req, res) => {
 const googleCallback = async (req, res) => {
   try {
     console.log('Google OAuth callback triggered');
+    console.log('User from session:', req.user);
+    
     if (!req.user) {
       console.error('No user found in Google OAuth callback');
       return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/login?error=authentication_failed`);
     }
 
-    // Find or create user in DB
-    let user = await User.findOne({ googleId: req.user.googleId || req.user.id });
-    if (!user) {
-      // If not found by googleId, try by email
-      user = await User.findOne({ email: req.user.email });
-      if (!user) {
-        // Create new user
-        user = await User.create({
-          googleId: req.user.googleId || req.user.id,
-          name: req.user.displayName || req.user.name,
-          email: req.user.email,
-          avatar: req.user.avatar || req.user.photo || (req.user.photos && req.user.photos[0] && req.user.photos[0].value)
-        });
-      } else {
-        // Link googleId if user exists by email
-        user.googleId = req.user.googleId || req.user.id;
-        await user.save();
-      }
-    }
-
+    // The user should already be created/linked in the passport strategy
+    // Just generate the JWT token and redirect
+    const user = req.user;
+    
     // Update user's last active time and online status
     await User.findByIdAndUpdate(user._id, {
       lastActive: new Date(),
       isOnline: true
     });
 
-    // Generate token
+    // Generate JWT token
     const token = generateToken(user._id);
     if (!token) {
       console.error('Failed to generate token');
       return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/login?error=token_generation_failed`);
     }
 
-    // Redirect to frontend with token
+    console.log('Google OAuth successful, redirecting with token');
+    
+    // Redirect to frontend with token (ensure CLIENT_URL is set correctly)
     const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/callback?token=${token}`;
     res.redirect(redirectUrl);
   } catch (error) {

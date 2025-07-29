@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
+const session = require('express-session');
 const path = require('path');
 
 // Import middleware
@@ -63,10 +64,30 @@ app.use(cors(corsOptions));
 
 // Compression middleware
 app.use(compression());
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Session middleware - REQUIRED for Passport.js
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+  },
+  name: 'connecthub.sid'
+}));
+
+// Initialize Passport and restore authentication state, if any, from the session
+app.use(require('passport').initialize());
+app.use(require('passport').session());
+
 // Rate limiting
 app.use(generalLimiter);
 // Health check endpoint
@@ -106,113 +127,32 @@ app.get('/api', (req, res) => {
 // Serve uploaded files (if using local storage)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'API endpoint not found',
-    requestedUrl: req.originalUrl,
-    method: req.method,
-    timestamp: new Date().toISOString()
-  });
-});
-
 // Global error handler
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
-
-  // Handle CORS errors
-  if (error.message === 'Not allowed by CORS') {
-    return res.status(403).json({
+  
+  // Handle session-related errors
+  if (error.message && error.message.includes('session')) {
+    return res.status(500).json({
       success: false,
-      message: 'CORS error: Origin not allowed',
-      timestamp: new Date().toISOString()
+      message: 'Session configuration error. Please check server logs.',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
-
-  // Handle JSON parsing errors
-  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid JSON format',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Handle file upload errors
-  if (error.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({
-      success: false,
-      message: 'File size too large',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Handle validation errors
-  if (error.name === 'ValidationError') {
-    const errors = Object.values(error.errors).map(e => ({
-      field: e.path,
-      message: e.message
-    }));
-    
-    return res.status(400).json({
-      success: false,
-      message: 'Validation error',
-      errors,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Handle MongoDB duplicate key errors
-  if (error.code === 11000) {
-    const field = Object.keys(error.keyPattern)[0];
-    return res.status(400).json({
-      success: false,
-      message: `${field} already exists`,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Handle JWT errors
-  if (error.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid token',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  if (error.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Token expired',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Handle MongoDB connection errors
-  if (error.name === 'MongoError' || error.name === 'MongooseError') {
-    return res.status(503).json({
-      success: false,
-      message: 'Database connection error',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Default error response
-  const statusCode = error.statusCode || error.status || 500;
-  const message = error.message || 'Internal server error';
-
-  res.status(statusCode).json({
+  
+  // Handle other errors
+  res.status(500).json({
     success: false,
-    message,
-    timestamp: new Date().toISOString(),
-    ...(process.env.NODE_ENV === 'development' && {
-      error: {
-        name: error.name,
-        stack: error.stack
-      }
-    })
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
   });
 });
 

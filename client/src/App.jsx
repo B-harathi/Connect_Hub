@@ -19,6 +19,9 @@ import Settings from './components/settings/Settings';
 import LoadingScreen from './components/common/LoadingScreen';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
+// Import AuthCallback from routes.jsx
+import { AuthCallback } from './routes';
+
 // Hooks
 import { useAuth } from './contexts/AuthContext';
 
@@ -80,6 +83,9 @@ const AppRouter = () => {
             </PublicRoute>
           } 
         />
+        
+        {/* Auth callback route for Google OAuth */}
+        <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallback />} />
         
         {/* Protected routes */}
         <Route 

@@ -132,7 +132,20 @@ router.get('/test-google-config', (req, res) => {
       hasSessionSecret: !!process.env.SESSION_SECRET,
       clientIdLength: process.env.GOOGLE_CLIENT_ID ? process.env.GOOGLE_CLIENT_ID.length : 0,
       callbackUrl: '/api/auth/google/callback',
-      clientUrl: process.env.CLIENT_URL || 'http://localhost:3000'
+      clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+      nodeEnv: process.env.NODE_ENV || 'development'
+    }
+  });
+});
+
+// Test route to check session configuration
+router.get('/test-session', (req, res) => {
+  res.json({
+    success: true,
+    session: {
+      id: req.sessionID,
+      hasSession: !!req.session,
+      sessionData: req.session
     }
   });
 });
