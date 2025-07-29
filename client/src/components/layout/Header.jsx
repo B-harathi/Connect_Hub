@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   HiOutlineMenu, 
+  HiOutlineSearch, 
   HiOutlineBell, 
-  HiOutlineUsers,
-  HiOutlineSearch,
-  HiOutlineCog,
+  HiOutlineCog, 
   HiOutlineLogout,
-  HiOutlineSun,
-  HiOutlineMoon
+  HiOutlineSun, 
+  HiOutlineMoon,
+  HiOutlineUsers
 } from 'react-icons/hi';
-import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChat } from '../../contexts/ChatContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { generateAvatarUrl, getChatDisplayName, getChatDisplayAvatar } from '../../utils/helpers';
-import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { getChatDisplayName, getChatDisplayAvatar, generateAvatarUrl } from '../../utils/helpers';
+import { ROUTES } from '../../utils/constants';
 
 const Header = ({ 
   onToggleSidebar, 
@@ -27,6 +29,7 @@ const Header = ({
   const { user, logout } = useAuth();
   const { currentChat } = useChat();
   const { changeTheme, isDarkMode } = useTheme();
+  const { notificationCount } = useNotifications();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
@@ -128,16 +131,15 @@ const Header = ({
         {/* Notifications button */}
         <button
           onClick={onToggleNotifications}
-          className={`relative p-2 rounded-lg transition-colors ${
-            notificationsOpen
-              ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-          aria-label="Toggle notifications"
+          className="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+          aria-label="Notifications"
         >
           <HiOutlineBell className="h-6 w-6" />
-          {/* Notification badge */}
-          <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500"></span>
+          {notificationCount > 0 && (
+            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+              {notificationCount > 99 ? '99+' : notificationCount}
+            </span>
+          )}
         </button>
 
         {/* Suggestions button */}

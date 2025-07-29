@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { ChatProvider } from './contexts/ChatContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // Components
 import Layout from './components/layout/Layout';
@@ -141,60 +142,62 @@ const App = () => {
           <SocketProvider>
             <ChatProvider>
               <ThemeProvider>
-                <AppRouter />
-                
-                {/* Toast notifications */}
-                <Toaster
-                position="top-right"
-                reverseOrder={false}
-                gutter={8}
-                containerClassName=""
-                containerStyle={{}}
-                toastOptions={{
-                  // Define default options
-                  className: '',
-                  duration: 4000,
-                  style: {
-                    background: 'var(--toast-bg, #363636)',
-                    color: 'var(--toast-color, #fff)',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    maxWidth: '500px',
-                  },
+                <NotificationProvider>
+                  <AppRouter />
                   
-                  // Success
-                  success: {
-                    duration: 3000,
+                  {/* Toast notifications */}
+                  <Toaster
+                  position="top-right"
+                  reverseOrder={false}
+                  gutter={8}
+                  containerClassName=""
+                  containerStyle={{}}
+                  toastOptions={{
+                    // Define default options
+                    className: '',
+                    duration: 4000,
                     style: {
-                      background: '#10b981',
+                      background: 'var(--toast-bg, #363636)',
+                      color: 'var(--toast-color, #fff)',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      maxWidth: '500px',
                     },
-                    iconTheme: {
-                      primary: '#fff',
-                      secondary: '#10b981',
+                    
+                    // Success
+                    success: {
+                      duration: 3000,
+                      style: {
+                        background: '#10b981',
+                      },
+                      iconTheme: {
+                        primary: '#fff',
+                        secondary: '#10b981',
+                      },
                     },
-                  },
-                  
-                  // Error
-                  error: {
-                    duration: 5000,
-                    style: {
-                      background: '#ef4444',
+                    
+                    // Error
+                    error: {
+                      duration: 5000,
+                      style: {
+                        background: '#ef4444',
+                      },
+                      iconTheme: {
+                        primary: '#fff',
+                        secondary: '#ef4444',
+                      },
                     },
-                    iconTheme: {
-                      primary: '#fff',
-                      secondary: '#ef4444',
+                    
+                    // Loading
+                    loading: {
+                      duration: Infinity,
+                      style: {
+                        background: '#6366f1',
+                      },
                     },
-                  },
-                  
-                  // Loading
-                  loading: {
-                    duration: Infinity,
-                    style: {
-                      background: '#6366f1',
-                    },
-                  },
-                }}
-              />
+                  }}
+                />
+                </NotificationProvider>
               </ThemeProvider>
             </ChatProvider>
           </SocketProvider>

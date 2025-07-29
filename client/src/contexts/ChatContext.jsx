@@ -230,9 +230,16 @@ export const ChatProvider = ({ children }) => {
     const handleNewMessage = (data) => {
       dispatch({ type: CHAT_ACTIONS.ADD_MESSAGE, payload: data.message });
       
-      // Show notification if not in current chat
+      // Update unread count for the chat
       if (state.currentChat?._id !== data.message.chat) {
-        toast.success(`New message from ${data.message.sender.name}`);
+        const currentUnreadCount = state.unreadCounts[data.message.chat] || 0;
+        dispatch({ 
+          type: CHAT_ACTIONS.UPDATE_UNREAD_COUNT, 
+          payload: { 
+            chatId: data.message.chat, 
+            count: currentUnreadCount + 1 
+          } 
+        });
       }
     };
 
